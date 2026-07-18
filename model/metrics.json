@@ -1,0 +1,19 @@
+{
+  "crop_model": {
+    "accuracy": 0.7625,
+    "f1_macro": 0.7538
+  },
+  "stress_model": {
+    "accuracy": 0.9592,
+    "f1_macro": 0.9592
+  },
+  "features": [
+    "NDVI",
+    "NDWI",
+    "MSI",
+    "VV_dB",
+    "VH_dB",
+    "VV_VH_ratio",
+    "growth_fraction"
+  ]
+}

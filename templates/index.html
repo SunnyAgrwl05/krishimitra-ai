@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="hi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>KrishiMitra — AI Crop &amp; Irrigation Advisory</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='5') }}">
+</head>
+
+<body>
+
+  <!-- ambient space background -->
+  <div class="space-bg" aria-hidden="true">
+    <div class="stars"></div>
+    <div class="glow glow-orange"></div>
+    <div class="glow glow-green"></div>
+  </div>
+
+  <header class="topbar glass">
+    <button class="icon-btn mobile-only" id="sidebarToggle" aria-label="Toggle sidebar" aria-expanded="false"
+      aria-controls="view-map-sidebar">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path fill="currentColor" d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z" />
+      </svg>
+    </button>
+
+    <div class="brand">
+      <span class="brand-mark">क</span>
+      <div class="brand-text">
+        <span class="brand-name">KrishiMitra</span>
+        <span class="brand-sub">ISRO H2S 2026 · Team SpaceHack</span>
+      </div>
+    </div>
+
+    <nav class="topnav" role="tablist" aria-label="Main sections">
+      <button class="nav-pill active" id="tab-map" role="tab" aria-selected="true">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path fill="currentColor"
+            d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
+        </svg>
+        Field Map
+      </button>
+      <button class="nav-pill" id="tab-analyze" role="tab" aria-selected="false">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path fill="currentColor"
+            d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+        </svg>
+        Naya Field Analyze
+      </button>
+      <button class="nav-pill" id="tab-pipeline" role="tab" aria-selected="false">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path fill="currentColor" d="M4 6h16v2H4zm0 5h10v2H4zm0 5h16v2H4z" />
+        </svg>
+        Pipeline
+      </button>
+    </nav>
+
+    <div class="live-badge"><span class="dot"></span> Live Sentinel-2 + Sentinel-1 (Simulated)</div>
+  </header>
+
+  <div class="sidebar-scrim" id="sidebarScrim" aria-hidden="true"></div>
+
+  <main class="layout">
+
+    <!-- LEFT: field list -->
+    <aside class="sidebar glass" id="view-map-sidebar">
+      <div class="sidebar-head">
+        <span>Fields — NDVI Health</span>
+        <span class="field-count" id="fieldCount">—</span>
+      </div>
+
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" width="15" height="15">
+          <path fill="currentColor"
+            d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 5L20.49 19l-5-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z" />
+        </svg>
+        <input type="text" id="fieldSearch" placeholder="Field ya district search karein…">
+      </div>
+
+      <div class="filter-row">
+        <button class="chip active" data-filter="all">Sab</button>
+        <button class="chip" data-filter="critical">Critical</button>
+        <button class="chip" data-filter="healthy">Healthy</button>
+      </div>
+
+      <div class="field-list" id="fieldList">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+
+      <div class="status-cards">
+        <div class="status-card">
+          <span class="sc-label">Total Fields</span>
+          <span class="sc-value" id="statTotal">—</span>
+        </div>
+        <div class="status-card sc-warn">
+          <span class="sc-label">Needs Irrigation</span>
+          <span class="sc-value" id="statCritical">—</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER: map -->
+    <section class="mapwrap" id="view-map">
+      <div id="map"></div>
+
+      <div class="map-toolbar glass">
+        <div class="layer-group" role="group" aria-label="Base layer">
+          <button class="layer-btn active" data-layer="dark">Dark</button>
+          <button class="layer-btn" data-layer="satellite">Satellite</button>
+          <button class="layer-btn" data-layer="street">Street</button>
+          <button class="layer-btn" data-layer="terrain">Terrain</button>
+        </div>
+        <div class="layer-group" role="group" aria-label="Overlay toggle">
+          <button class="layer-btn overlay-btn" data-overlay="ndvi">NDVI</button>
+          <button class="layer-btn overlay-btn" data-overlay="stress">Stress</button>
+          <button class="layer-btn overlay-btn" data-overlay="heat">Heat Map</button>
+        </div>
+      </div>
+
+      <div class="map-side-controls">
+        <button class="icon-btn glass" id="locateBtn" title="Locate me" aria-label="Locate me">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path fill="currentColor"
+              d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3H23v2h-2.06A9 9 0 0 1 13 20.94V23h-2v-2.06A9 9 0 0 1 3.06 13H1v-2h2.06A9 9 0 0 1 11 3.06V1h2v2.06A9 9 0 0 1 20.94 11zM12 19a7 7 0 1 0 0-14 7 7 0 0 0 0 14z" />
+          </svg>
+        </button>
+        <button class="icon-btn glass" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path fill="currentColor"
+              d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="map-legend glass" id="mapLegend">
+        <div class="legend-title">NDVI Health</div>
+        <div class="legend-row"><span class="sw" style="background:#35c37b"></span> Healthy (&gt;0.65)</div>
+        <div class="legend-row"><span class="sw" style="background:#7bc335"></span> Good (0.45–0.65)</div>
+        <div class="legend-row"><span class="sw" style="background:#e0a530"></span> Fair (0.25–0.45)</div>
+        <div class="legend-row"><span class="sw" style="background:#e0803a"></span> Weak (0.1–0.25)</div>
+        <div class="legend-row"><span class="sw" style="background:#e0483d"></span> Bare (&lt;0.1)</div>
+      </div>
+    </section>
+
+    <!-- RIGHT: detail panel -->
+    <aside class="detail glass" id="detailPanel" aria-label="Field detail" role="region">
+      <button class="icon-btn detail-close mobile-only" id="detailClose" aria-label="Close detail panel">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <path fill="currentColor"
+            d="M18.3 5.71 12 12.01l-6.3-6.3-1.41 1.41 6.3 6.3-6.3 6.29 1.41 1.42 6.3-6.3 6.3 6.3 1.41-1.42-6.3-6.29 6.3-6.3z" />
+        </svg>
+      </button>
+      <span class="sheet-handle mobile-only" aria-hidden="true"></span>
+      <div class="detail-empty">
+        <svg viewBox="0 0 24 24" width="34" height="34">
+          <path fill="currentColor" opacity=".5"
+            d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
+        </svg>
+        <p>Field select karein map ya list se, poora AI advisory yahan dikhega.</p>
+      </div>
+    </aside>
+
+    <!-- ANALYZE VIEW (wizard) -->
+    <section class="analyze-view" id="view-analyze" style="display:none">
+      <div class="analyze-card glass">
+        <h2>Naya Field Analyze Karein</h2>
+        <p class="muted">Lat/Lon daalein — pura pipeline (satellite ingest → feature extraction → AI model → irrigation
+          advisory) live chalega.</p>
+
+        <div class="wizard-steps" id="wizardSteps">
+          <div class="wstep active" data-step="1"><span class="wnum">1</span> Location</div>
+          <div class="wstep" data-step="2"><span class="wnum">2</span> Crop &amp; Stage</div>
+          <div class="wstep" data-step="3"><span class="wnum">3</span> Weather</div>
+          <div class="wstep" data-step="4"><span class="wnum">4</span> Analyze</div>
+        </div>
+
+        <form id="analyzeForm">
+          <!-- Step 1: Location -->
+          <div class="wpanel" data-panel="1">
+            <div class="row">
+              <label>Village <input type="text" name="village" placeholder="Optional"></label>
+              <label>District <input type="text" name="district" placeholder="Optional"></label>
+            </div>
+            <div class="row">
+              <label>State <input type="text" name="state" placeholder="Optional"></label>
+              <label>&nbsp;
+                <button type="button" class="btn-ghost" id="autoFillBtn">📍 Auto-fill Coordinates</button>
+              </label>
+            </div>
+            <div class="row">
+              <label>Latitude <input type="number" step="0.0001" name="lat" value="26.85" required></label>
+              <label>Longitude <input type="number" step="0.0001" name="lon" value="80.95" required></label>
+            </div>
+          </div>
+
+          <!-- Step 2: Crop & Stage -->
+          <div class="wpanel" data-panel="2" hidden>
+            <div class="row">
+              <label>Crop (optional)
+                <select name="crop">
+                  <option value="">Auto-detect</option>
+                  <option>Wheat</option>
+                  <option>Rice</option>
+                  <option>Maize</option>
+                  <option>Pulses</option>
+                </select>
+              </label>
+              <label>Date (optional) <input type="date" name="date"></label>
+            </div>
+            <div class="row">
+              <label>Force moisture deficit % (optional, testing ke liye)
+                <input type="number" name="deficit_pct" min="0" max="60" placeholder="0-60">
+              </label>
+            </div>
+          </div>
+
+          <!-- Step 3: Weather (display-only inputs, sent as extra context) -->
+          <div class="wpanel" data-panel="3" hidden>
+            <p class="muted">Weather info — optional context (agar future API se live milega to yahan auto-fill hoga).
+            </p>
+            <div class="row">
+              <label>Expected Rain (mm) <input type="number" name="rain_mm" placeholder="e.g. 5"></label>
+              <label>Humidity (%) <input type="number" name="humidity_pct" placeholder="e.g. 60"></label>
+            </div>
+            <div class="row">
+              <label>Temperature (°C) <input type="number" name="temp_c" placeholder="e.g. 32"></label>
+            </div>
+          </div>
+
+          <!-- Step 4: Analyze -->
+          <div class="wpanel" data-panel="4" hidden>
+            <p class="muted">Sab details ready hain — Analyze button dabao, AI pipeline live chalega.</p>
+            <button type="submit" class="btn-primary">🔎 Analyze Field</button>
+          </div>
+
+          <div class="wizard-nav">
+            <button type="button" class="btn-ghost" id="wPrev" disabled>← Peeche</button>
+            <button type="button" class="btn-primary" id="wNext">Aage →</button>
+          </div>
+        </form>
+
+        <div id="analyzeResult"></div>
+      </div>
+    </section>
+
+    <!-- PIPELINE VIEW -->
+    <section class="analyze-view" id="view-pipeline" style="display:none">
+      <div class="analyze-card glass">
+        <h2>System Pipeline &amp; Model Metrics</h2>
+        <div id="pipelineMetrics" class="muted">Loading…</div>
+
+        <div class="pipeline-flow">
+          <div class="pnode">Data Ingestion</div>
+          <div class="parrow">↓</div>
+          <div class="pnode">Preprocessing</div>
+          <div class="parrow">↓</div>
+          <div class="pnode">Feature Extraction</div>
+          <div class="parrow">↓</div>
+          <div class="pnode">AI Models</div>
+          <div class="parrow">↓</div>
+          <div class="pnode">Decision Engine</div>
+          <div class="parrow">↓</div>
+          <div class="pnode pnode-final">Output / Dashboard</div>
+        </div>
+
+        <div class="pipeline-steps">
+          <div class="pstep"><b>1. Data Ingestion</b><span>Sentinel-2, Landsat, AWiFS (simulated schema-matched)</span>
+          </div>
+          <div class="pstep"><b>2. Preprocessing</b><span>Cloud mask, SAR speckle filter, terrain correction</span>
+          </div>
+          <div class="pstep"><b>3. Feature Extraction</b><span>NDVI, NDWI, MSI, VV/VH ratio</span></div>
+          <div class="pstep"><b>4. AI Models</b><span>RandomForest crop classifier + stress classifier (prototype for
+              CNN-Transformer / LSTM)</span></div>
+          <div class="pstep"><b>5. Decision Engine</b><span>FAO-56 Kc water balance + stress-based irrigation
+              rules</span></div>
+          <div class="pstep"><b>6. Output</b><span>Dashboard, JSON API, SMS-ready advisory text</span></div>
+        </div>
+
+        <div id="featureImportance" class="feature-importance"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="{{ url_for('static', filename='script.js', v='7') }}"></script>
+</body>
+
+</html>
