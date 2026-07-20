@@ -25,6 +25,7 @@ CROP_CALENDAR = {
     "Rice":   {"sow_doy": 160, "duration": 120, "peak_ndvi": 0.88, "peak_water": 8.0},
     "Maize":  {"sow_doy": 180, "duration": 100, "peak_ndvi": 0.85, "peak_water": 6.0},
     "Pulses": {"sow_doy": 275, "duration": 90,  "peak_ndvi": 0.65, "peak_water": 3.5},
+    "Sugarcane": {"sow_doy": 40, "duration": 330, "peak_ndvi": 0.90, "peak_water": 7.5},
 }
 
 STAGES = ["Sowing", "Vegetative", "Heading/Flowering", "Maturity", "Harvest"]

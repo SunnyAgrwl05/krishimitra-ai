@@ -227,7 +227,7 @@ function setupLayerControls() {
 
           console.warn("Geolocation failed:", err);
 
-          alert("Current location detect nahi ho paayi. Default location use ki ja rahi hai.");
+          console.warn("Current location unavailable. Using default location.");
 
           map.flyTo([27.3, 80.2], 8);
 
@@ -277,6 +277,8 @@ function applyOverlays() {
 
 /* ================= FIELD DATA ================= */
 async function loadFields() {
+  console.log("========== LOADFIELDS ==========");
+  console.trace();
   try {
     const res = await fetch('/api/fields');
     const data = await res.json();
@@ -332,7 +334,7 @@ function renderFieldList(data) {
     card.innerHTML = `
       <div>
         <div class="fc-name">${d.field.name} <span class="muted" style="font-size:11px">(${d.field.id})</span></div>
-        <div class="fc-sub">${d.field.district} · ${d.ai_prediction.predicted_crop}</div>
+        <div class="fc-sub">${d.field.district} · ${d.satellite_features.crop}</div>
       </div>
       <div class="fc-score" style="background:${ndviColor(ndvi)}">${ndvi.toFixed(2)}</div>
     `;
@@ -406,13 +408,22 @@ function applyFieldFilter() {
 
 /* ================= DETAIL PANEL ================= */
 function selectField(i) {
+  console.log("========== SELECT FIELD ==========");
+  console.log("Index:", i);
+  console.log("Field:", fieldsData[i]?.field?.name);
+  console.trace();
+
   document.querySelectorAll('.field-card').forEach(c => c.classList.remove('selected'));
   const card = document.getElementById('card-' + i);
   if (card) card.classList.add('selected');
   const d = fieldsData[i];
   currentField = d;
   if (map) {
-    map.flyTo([d.field.lat, d.field.lon], 11, { duration: 1.2 });
+    map.stop(); // cancel any in-flight flyTo so rapid clicks don't queue/stack animations
+    map.flyTo([d.field.lat, d.field.lon], 13, {
+      animate: true,
+      duration: 0.6,
+    });
   }
   renderDetail(d);
   if (isMobile()) {
@@ -481,7 +492,8 @@ function renderDetail(d) {
     <div class="risk-badge ${adv.urgency}">${adv.urgency} Risk</div>
 
     <div class="stat-grid">
-      <div class="stat"><div class="label">Crop (AI)</div><div class="value">${ai.predicted_crop}</div></div>
+      <div class="stat"><div class="label">Actual Crop</div><div class="value">${feats.crop}</div></div>
+      <div class="stat"><div class="label">AI Prediction</div><div class="value">${ai.predicted_crop}</div></div>
       <div class="stat"><div class="label">Growth Stage</div><div class="value" style="font-size:14px">${feats.growth_stage}</div></div>
       <div class="stat"><div class="label">NDVI</div><div class="value">${feats.optical.NDVI}</div></div>
       <div class="stat"><div class="label">NDWI</div><div class="value">${feats.optical.NDWI}</div></div>
@@ -1178,32 +1190,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const initialCloseBtn = document.getElementById('detailClose');
   if (initialCloseBtn) initialCloseBtn.addEventListener('click', closeDetailSheet);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

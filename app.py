@@ -24,6 +24,7 @@ import history as history_db
 
 import joblib
 import pandas as pd
+from concurrent.futures import ThreadPoolExecutor
 
 BASE = os.path.dirname(__file__)
 MODEL_DIR = os.path.join(BASE, "model")
@@ -57,12 +58,60 @@ def get_models():
 
 # ---- demo fields shown on the dashboard by default (matches the mock UI) ----
 DEMO_FIELDS = [
-    {"id": "F-21", "name": "Chhotelal", "district": "Budaun", "state": "UP", "lat": 27.9, "lon": 79.13, "crop_hint": "Wheat"},
-    {"id": "F-14", "name": "Nand Kishor", "district": "Unnao", "state": "UP", "lat": 26.53, "lon": 80.49, "crop_hint": "Rice"},
-    {"id": "F-08", "name": "Badrinath", "district": "Sitapur", "state": "UP", "lat": 27.57, "lon": 80.68, "crop_hint": "Maize"},
-    {"id": "F-33", "name": "Kamlesh Kumar", "district": "Shahjahanpur", "state": "UP", "lat": 27.88, "lon": 79.91, "crop_hint": "Pulses"},
-    {"id": "F-05", "name": "Suresh Singh", "district": "Bareilly", "state": "UP", "lat": 28.35, "lon": 79.43, "crop_hint": "Maize"},
-    {"id": "F-19", "name": "Dindayal", "district": "Lakhimpur", "state": "UP", "lat": 27.95, "lon": 80.78, "crop_hint": "Rice"},
+    {
+        "id": "F-21",
+        "name": "Sunny Kumar",
+        "district": "Bakhtiyarpur",
+        "state": "Bihar",
+        "lat": 25.46,
+        "lon": 85.53,
+        "crop_hint": "Rice"
+    },
+    {
+        "id": "F-14",
+        "name": "Tanya Garg",
+        "district": "Meerut",
+        "state": "Uttar Pradesh",
+        "lat": 28.98,
+        "lon": 77.70,
+        "crop_hint": "Wheat"
+    },
+    {
+        "id": "F-08",
+        "name": "Adarsh Kushwaha",
+        "district": "Faridabad",
+        "state": "Haryana",
+        "lat": 28.41,
+        "lon": 77.31,
+        "crop_hint": "Mustard"
+    },
+    {
+        "id": "F-33",
+        "name": "Siddharth",
+        "district": "Lucknow",
+        "state": "Uttar Pradesh",
+        "lat": 26.85,
+        "lon": 80.95,
+        "crop_hint": "Maize"
+    },
+     {
+    "id": "F-05",
+    "name": "Kajal Kumari",
+    "district": "Begusarai",
+    "state": "Bihar",
+    "lat": 25.4182,
+    "lon": 86.1272,
+    "crop_hint": "Rice"
+},
+{
+    "id": "F-19",
+    "name": "Team SpaceHack",
+    "district": "Gurugram",
+    "state": "Haryana",
+    "lat": 28.46,
+    "lon": 77.03,
+    "crop_hint": "Sugarcane"
+},
 ]
 
 
@@ -77,8 +126,12 @@ def run_pipeline(lat, lon, crop_hint=None, when=None, deficit=None):
         "VV_VH_ratio": rec["sar"]["VV_VH_ratio"], "growth_fraction": rec["growth_fraction"],
     }])[FEATURES]
 
-    predicted_crop = crop_model.predict(feat)[0]
-    crop_proba = max(crop_model.predict_proba(feat)[0])
+    if crop_hint:
+        predicted_crop = crop_hint
+        crop_proba = 1.0
+    else:
+        predicted_crop = crop_model.predict(feat)[0]
+        crop_proba = max(crop_model.predict_proba(feat)[0])
     predicted_stress = stress_model.predict(feat)[0]
     stress_proba = max(stress_model.predict_proba(feat)[0])
 
@@ -104,15 +157,34 @@ def dashboard():
 
 @app.route("/api/fields")
 def api_fields():
-    """Runs the full pipeline for all demo fields (as shown on the map)."""
-    results = []
-    for f in DEMO_FIELDS:
+    """Runs the full pipeline for all demo fields in parallel."""
+
+    def process(f):
         try:
-            out = run_pipeline(f["lat"], f["lon"], crop_hint=f["crop_hint"])
-            out["field"].update({"id": f["id"], "name": f["name"], "district": f["district"], "state": f["state"]})
-            results.append(out)
+            out = run_pipeline(
+                f["lat"],
+                f["lon"],
+                crop_hint=f["crop_hint"]
+            )
+
+            out["field"].update({
+                "id": f["id"],
+                "name": f["name"],
+                "district": f["district"],
+                "state": f["state"]
+            })
+
+            return out
+
         except Exception as e:
-            results.append({"error": str(e), "field": f})
+            return {
+                "error": str(e),
+                "field": f
+            }
+
+    with ThreadPoolExecutor(max_workers=min(6, len(DEMO_FIELDS))) as executor:
+        results = list(executor.map(process, DEMO_FIELDS))
+
     return jsonify(results)
 
 
@@ -208,13 +280,18 @@ def api_history():
 def api_dashboard():
     """Aggregate summary across the demo fields -- for a landing/overview widget."""
     try:
-        results = []
-        for f in DEMO_FIELDS:
+        def process_dashboard(f):
             try:
-                out = run_pipeline(f["lat"], f["lon"], crop_hint=f["crop_hint"])
-                results.append(out)
+                return run_pipeline(
+                    f["lat"],
+                    f["lon"],
+                    crop_hint=f["crop_hint"]
+                )
             except Exception:
-                continue
+                return None
+
+        with ThreadPoolExecutor(max_workers=min(6, len(DEMO_FIELDS))) as executor:
+            results = [r for r in executor.map(process_dashboard, DEMO_FIELDS) if r is not None]
 
         total = len(results)
         crop_counts, stress_counts, urgency_counts = {}, {}, {}

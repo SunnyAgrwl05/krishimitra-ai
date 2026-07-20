@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # KrishiMitra — AI Crop Type, Moisture Stress Detection &amp; Irrigation Advisory
 
 **Team SpaceHack — Bharatiya Antariksh Hackathon 2026 (ISRO H2S)**
@@ -179,3 +180,6 @@ Browser: http://localhost:5000
   CNN-Transformer + real multi-year training data se improve hoga.
 - Dashboard map (Leaflet + CARTO tiles) internet access maangta hai judge ke laptop par
   (normal WiFi/hotspot kaafi hai).
+=======
+# krishimitra-ai
+>>>>>>> 31acc200d19cd52b08561995f796364aad33329d
