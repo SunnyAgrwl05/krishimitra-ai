@@ -1,185 +1,317 @@
-<<<<<<< HEAD
-# KrishiMitra — AI Crop Type, Moisture Stress Detection &amp; Irrigation Advisory
+# 🌾 KrishiMitra AI
 
-**Team SpaceHack — Bharatiya Antariksh Hackathon 2026 (ISRO H2S)**
-Problem Statement: *AI-Driven Automated Crop type, Moisture Stress Detection and irrigation
-advisory Across Growth Stages Using Moderate Resolution Spectral Signatures
-(Optical &amp; Microwave Satellite Data)*
+> AI-powered Crop Type, Moisture Stress Detection & Smart Irrigation Advisory System
 
----
+Built for **ISRO Bharatiya Antariksh Hackathon 2026** by **Team SpaceHack**
 
-## Kya bana hai (What this is)
-
-Ek end-to-end working prototype jo PPT mein diye gaye system pipeline ko implement karta hai:
-
-```
-Data Ingestion → Preprocessing → Feature Extraction → AI Modeling → Decision Engine → Dashboard
-```
-
-| Stage | Implementation (this repo) | Production upgrade path |
-|---|---|---|
-| Data Ingestion | `model/satellite_sim.py` — deterministic, schema-matched Sentinel-2 (optical) + Sentinel-1 (SAR) simulator, crop-calendar aware | Swap for Google Earth Engine Python API pulling real Sentinel-2/Landsat/AWiFS + Sentinel-1/NISAR |
-| Preprocessing | Baked into simulator (cloud-free, terrain-corrected signal) | Sen2Cor atm. correction, FMask cloud masking, SNAP/ISCE SAR speckle filter |
-| Feature Extraction | NDVI, NDWI, MSI, VV/VH backscatter + ratio, growth_fraction | Same, computed from real rasters via GDAL/Rasterio/xarray |
-| AI Modeling | RandomForest crop classifier (76% acc) + RandomForest stress classifier (96% acc) — `model/train_model.py` | CNN-Transformer (crop ID) + LSTM-Attention (phenology), trained on multi-year labelled Sentinel time series |
-| Decision Engine | `model/decision_engine.py` — FAO-56 Kc-based crop water balance + stress-severity irrigation rules | Full CROPWAT/Optirrig integration + live rainfall forecast (OpenWeatherMap/NOAA) |
-| Output/Delivery | Web dashboard (Flask) + JSON API + Hinglish advisory text (SMS-ready) | Add Twilio SMS delivery, GeoTIFF/shapefile export |
-
-**Kyun simulated satellite data?** Live Google Earth Engine / Copernicus API access is
-sandbox mein available nahi tha (no internet in the build environment). Isliye
-`satellite_sim.py` ek deterministic, crop-calendar-aware generator hai jo Sentinel-2/-1
-jaisa hi feature schema deta hai — taaki AI model, decision engine, aur dashboard
-**exactly wahi** kaam karein jo real data ke saath karenge. Real access milte hi sirf
-`satellite_sim.simulate_field()` ko GEE calls se replace karna hai — baaki system untouched.
+![Python](https://img.shields.io/badge/Python-3.11-blue)
+![Flask](https://img.shields.io/badge/Flask-Backend-black)
+![Scikit Learn](https://img.shields.io/badge/Scikit--Learn-AI-orange)
+![Leaflet](https://img.shields.io/badge/Leaflet-Maps-green)
+![License](https://img.shields.io/badge/License-MIT-success)
 
 ---
 
-## Project structure
+## 📸 Dashboard Preview
 
+<p align="center">
+  <img src="docs/dashboard-preview.png" alt="KrishiMitra Dashboard" width="100%">
+</p>
+
+---
+
+## 📖 Overview
+
+KrishiMitra AI is an intelligent agriculture platform that combines simulated satellite imagery, machine learning, weather analysis, and irrigation advisory into a single interactive dashboard.
+
+The platform helps farmers monitor crop health, detect moisture stress, and receive smart irrigation recommendations using satellite-derived vegetation indices and AI models.
+
+---
+
+## ✨ Features
+
+- 🛰️ Satellite-based Crop Monitoring
+- 🌱 AI Crop Classification
+- 💧 Smart Irrigation Recommendation
+- 📍 Interactive GIS Dashboard
+- 🌦️ Weather Integration
+- 📄 PDF Report Generation
+- 🔍 Location Search
+- 📊 NDVI, NDWI & MSI Visualization
+- 📱 Responsive UI
+
+---
+
+# 🏗 System Architecture
+
+```text
+Satellite Data
+      │
+      ▼
+Preprocessing
+      │
+      ▼
+Feature Extraction
+      │
+      ▼
+AI Models
+      │
+      ▼
+Decision Engine
+      │
+      ▼
+Interactive Dashboard
 ```
-krishimitra/
-├── app.py                        # Flask backend + REST API
+
+---
+
+# 🛠 Tech Stack
+
+| Category | Technologies |
+|----------|--------------|
+| Frontend | HTML5, CSS3, JavaScript |
+| Backend | Flask, Python |
+| AI/ML | Scikit-learn, Pandas, Joblib |
+| Mapping | Leaflet.js, OpenStreetMap |
+| Satellite | Sentinel-2 (Simulated), Sentinel-1 SAR (Simulated) |
+| Reports | jsPDF |
+| Deployment | Docker |
+
+---
+
+# 📂 Project Structure
+
+```text
+krishimitra-ai/
+│
+├── app.py
+├── model/
+├── static/
+├── templates/
+├── docs/
+├── tests/
 ├── requirements.txt
 ├── Dockerfile
-├── model/
-│   ├── satellite_sim.py          # simulated Sentinel-2 + Sentinel-1 ingestion
-│   ├── generate_training_data.py # synthetic labelled dataset generator
-│   ├── train_model.py            # trains + saves crop_model.pkl, stress_model.pkl
-│   ├── decision_engine.py         # irrigation advisory rules (FAO-56 Kc)
-│   ├── crop_model.pkl / stress_model.pkl / metrics.json   (generated)
-├── templates/index.html          # dashboard UI
-├── static/style.css, script.js   # dashboard styling + Leaflet map logic
-└── tests/test_app.py             # pytest suite (12 tests)
+└── README.md
 ```
 
 ---
 
-## Current API (v2 — all original endpoints preserved + new ones added)
-
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/api/fields` | GET | Original — pipeline results for the 6 demo fields |
-| `/api/analyze` | POST | Original — ad-hoc lat/lon analysis (now also logs to history) |
-| `/api/model-metrics` | GET | Original — crop/stress model accuracy |
-| `/api/health` | GET | Original — health check |
-| `/api/weather` | GET `?lat=&lon=` | **New** — OpenWeatherMap if `OPENWEATHER_API_KEY` set, else simulated |
-| `/api/search-location` | GET `?q=` | **New** — village/district/state search via Nominatim |
-| `/api/history` | GET `?crop=&urgency=&limit=` | **New** — past analyses (SQLite-backed) |
-| `/api/dashboard` | GET | **New** — aggregate stats across all demo fields |
-
-**Response format unchanged** for all four original endpoints — nothing that already
-worked was modified.
-
-## What's new in this version (Phase 1 + Phase 2)
-
-- **Frontend**: glassmorphism dark space theme, animated sidebar with search/filter chips,
-  skeleton loading states, 4 map base layers (Dark/Satellite/Street/Terrain) + NDVI/Stress/Heatmap
-  overlay toggles, marker clustering, locate-me + fullscreen controls, risk badges + progress bars
-  in the detail panel, growth timeline visual, 4-step Analyze wizard (Location → Crop&Stage →
-  Weather → Analyze), animated pipeline architecture diagram + illustrative feature importance chart.
-- **Backend**: `model/gee.py` (Google Earth Engine module — auto-initializes if `earthengine-api`
-  is installed and credentials are set via `GEE_SERVICE_ACCOUNT`/`GEE_KEY_PATH`; otherwise falls
-  back to the existing simulator automatically, no code changes needed elsewhere), `model/weather.py`
-  (OpenWeatherMap, env var `OPENWEATHER_API_KEY`), `model/location_search.py` (Nominatim),
-  `model/history.py` (SQLite log of every `/api/analyze` call).
-- **Not yet implemented** (documented honestly, not silently skipped): PDF report generation,
-  JWT auth (farmer/admin login), PWA offline support, WhatsApp/SMS delivery, Chart.js trend
-  charts. These are straightforward additions on top of the current structure — ask if you want
-  them built out next.
-
-## 1. Setup (ek baar)
+# ⚙ Installation
 
 ```bash
-cd krishimitra
-python3 -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
+git clone https://github.com/SunnyAgrwl05/krishimitra-ai.git
+
+cd krishimitra-ai
+
+python -m venv venv
+
+source venv/bin/activate
+# Windows:
+# venv\Scripts\activate
+
 pip install -r requirements.txt
 ```
 
-## 2. Model train karna (build)
+---
+
+# 🚀 Run the Project
+
+Train the AI models
 
 ```bash
-python3 model/generate_training_data.py   # 6000 synthetic labelled samples banata hai
-python3 model/train_model.py              # crop_model.pkl + stress_model.pkl train + save
+python model/generate_training_data.py
+python model/train_model.py
 ```
 
-Expected output: crop model ~76% accuracy, stress model ~96% accuracy (`model/metrics.json` mein saved).
-
-## 3. Run karna
+Start the Flask server
 
 ```bash
-python3 app.py
+python app.py
 ```
 
-Browser mein kholein: **http://localhost:5000**
+Open
 
-- **Field Map** tab — 6 demo fields (UP districts) live pipeline se analyzed, map par color-coded (NDVI health + stress urgency)
-- **Naya Field Analyze** tab — koi bhi lat/lon daalo, full pipeline live chalega
-- **Pipeline** tab — model accuracy metrics + architecture steps
-
-## 4. Test karna
-
-```bash
-pip install pytest   # agar requirements.txt se pehle install nahi hua
-pytest tests/ -v
 ```
-
-12 tests cover: simulator determinism, decision-engine rules, aur poora Flask API
-(health check, fields list, analyze endpoint, error handling, model metrics).
-Sab pass hone chahiye.
-
-## 5. Quick API check (copy-paste)
-
-```bash
-curl http://localhost:5000/api/health
-curl http://localhost:5000/api/fields
-curl -X POST http://localhost:5000/api/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"lat": 26.85, "lon": 80.95, "crop": "Wheat"}'
+http://localhost:5001
 ```
-
-## 6. Deploy karna
-
-**Option A — Docker (recommended for demo/judges' laptop):**
-```bash
-docker build -t krishimitra .
-docker run -p 5000:5000 krishimitra
-```
-Browser: http://localhost:5000
-
-**Option B — Cloud (Render / Railway / any Python host):**
-- Push repo, set start command: `python3 app.py`
-- Add build command: `pip install -r requirements.txt && python3 model/generate_training_data.py && python3 model/train_model.py`
-- `PORT` env var automatically respected by `app.py`
 
 ---
 
-## Presentation mein kya bolna hai (talking points)
+# 📡 REST API
 
-1. **Problem**: Kisan ko pata nahi chalta ki field mein kaunsi fasal hai, kaunse growth
-   stage mein hai, aur kab paani chahiye — satellite data available hai par usable form mein nahi.
-2. **Solution**: Ek single AI pipeline jo Optical (NDVI/NDWI/MSI) + SAR (VV/VH) fuse karke
-   crop type, growth stage, aur moisture stress teeno automatically nikalta hai, phir
-   FAO-56 crop water balance se exact irrigation advisory deta hai.
-3. **Live demo**: Dashboard kholo, koi bhi field select karo — 2 second mein AI prediction
-   + confidence score + Hinglish advisory dikh jaata hai.
-4. **Scale**: Yeh architecture GEE ke saath national-scale par chal sakta hai (cloud-native,
-   stateless API, koi per-field manual analysis nahi).
-5. **Differentiation**: Existing tools sirf crop map ya sirf moisture map dete hain — yeh
-   ek hi pipeline mein dono + stage-aware advisory deta hai (jaisa PPT mein "Integrated
-   Intelligence" USP hai).
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/fields` | GET | Fetch all monitored fields |
+| `/api/analyze` | POST | Analyze a custom location |
+| `/api/weather` | GET | Weather information |
+| `/api/history` | GET | Analysis history |
+| `/api/dashboard` | GET | Dashboard statistics |
+| `/api/model-metrics` | GET | AI model performance |
+| `/api/health` | GET | Health check |
 
 ---
 
-## Known limitations (honestly documented for judges)
+# 🧠 AI Pipeline
 
-- Satellite data **simulated hai** (deterministic, schema-matched) kyunki live GEE access
-  build environment mein nahi tha — real deployment se pehle `satellite_sim.py` ko GEE
-  calls se replace karna hoga (interface already designed for drop-in swap).
-- Crop classifier accuracy 76% hai (RandomForest, prototype-grade) — production mein
-  CNN-Transformer + real multi-year training data se improve hoga.
-- Dashboard map (Leaflet + CARTO tiles) internet access maangta hai judge ke laptop par
-  (normal WiFi/hotspot kaafi hai).
-=======
-# krishimitra-ai
->>>>>>> 31acc200d19cd52b08561995f796364aad33329d
+- Satellite Image Simulation
+- Feature Extraction
+- Crop Classification
+- Moisture Stress Detection
+- Decision Engine
+- Smart Irrigation Advisory
+- Dashboard Visualization
+
+---
+
+# 📊 Satellite Features
+
+The AI model uses the following satellite-derived parameters:
+
+- NDVI
+- NDWI
+- MSI
+- VV Backscatter
+- VH Backscatter
+- VV/VH Ratio
+- Growth Fraction
+
+---
+
+# 👥 Team SpaceHack
+
+- 👩 Tanya Garg (Team Leader)
+- 👨 Sunny Kumar
+- 👨 Adarsh Kushwaha
+- 👨 Siddharth
+- 👩 Kajal Kumari
+
+---
+
+# 🔮 Future Improvements
+
+- Google Earth Engine Integration
+- Live Sentinel Data
+- Mobile Application
+- Multi-language Support
+- Farmer Authentication
+- Yield Prediction
+- Disease Detection
+- SMS & WhatsApp Alerts
+
+---
+
+# 📜 License
+
+This project is developed for the **ISRO Bharatiya Antariksh Hackathon 2026** by **Team SpaceHack**.
+
+For learning, research, and demonstration purposes.
+
+---
+
+# 🤝 Contributing
+
+Contributions are always welcome!
+
+If you'd like to improve KrishiMitra AI:
+
+1. Fork this repository
+2. Create a feature branch
+
+```bash
+git checkout -b feature/amazing-feature
+```
+
+3. Commit your changes
+
+```bash
+git commit -m "feat: add amazing feature"
+```
+
+4. Push your branch
+
+```bash
+git push origin feature/amazing-feature
+```
+
+5. Open a Pull Request
+
+---
+
+# 🖼️ Additional Screenshots
+
+## 📍 Field Monitoring Dashboard
+
+<p align="center">
+  <img src="docs/dashboard-preview.png" width="100%" alt="Dashboard">
+</p>
+
+---
+
+# 📈 Project Highlights
+
+- 🚀 End-to-End AI Agriculture Pipeline
+- 🛰️ Satellite-based Crop Monitoring
+- 🌱 AI Crop Type Prediction
+- 💧 Smart Irrigation Advisory
+- 📊 NDVI, NDWI & SAR Analytics
+- 🌦️ Weather Information Integration
+- 📄 Professional PDF Report Generation
+- 🗺️ Interactive GIS Dashboard
+- ⚡ Fast REST APIs
+- 📱 Responsive Modern UI
+
+---
+
+# 🌍 Real-World Applications
+
+- Smart Farming
+- Precision Agriculture
+- Irrigation Planning
+- Crop Health Monitoring
+- Agricultural Decision Support
+- Government Agriculture Programs
+- Satellite Data Analytics
+- Remote Sensing Research
+
+---
+
+# 🙏 Acknowledgements
+
+Special thanks to:
+
+- 🇮🇳 ISRO – Bharatiya Antariksh Hackathon 2026
+- Sentinel-1 & Sentinel-2 Mission
+- OpenStreetMap
+- Leaflet.js
+- Flask
+- Scikit-learn
+- Python Community
+
+---
+
+# 📬 Contact
+
+**Sunny Kumar**
+
+- GitHub: https://github.com/SunnyAgrwl05
+- LinkedIn: https://linkedin.com/in/sunny-kumar-a06484297
+
+For collaboration, feedback, or project discussions, feel free to connect.
+
+---
+
+<p align="center">
+
+### ⭐ If you found this project useful, please consider giving it a Star!
+
+Made with ❤️ by **Team SpaceHack**
+
+</p>
+
+
+
+
+
+
+
