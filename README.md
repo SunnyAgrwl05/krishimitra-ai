@@ -181,7 +181,6 @@ The AI model uses the following satellite-derived parameters:
 - 👨 Sunny Kumar
 - 👨 Adarsh Kushwaha
 - 👨 Siddharth
-- 👩 Kajal Kumari
 
 ---
 
