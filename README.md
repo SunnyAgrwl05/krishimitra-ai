@@ -14,9 +14,7 @@ Built for **ISRO Bharatiya Antariksh Hackathon 2026** by **Team SpaceHack**
 
 ## 📸 Dashboard Preview
 
-<p align="center">
-  <img src="docs/dashboard-preview.png" alt="KrishiMitra Dashboard" width="100%">
-</p>
+![KrishiMitra Dashboard](./docs/dashboard-preview.png)
 
 ---
 
