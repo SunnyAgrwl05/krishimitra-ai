@@ -10,10 +10,12 @@ Run: python3 app.py   (default: http://0.0.0.0:5000)
 
 import os
 import sys
+import io
+import csv
 import json
 from datetime import date, datetime
 
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, Response
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "model"))
 from satellite_sim import simulate_field, CROP_CALENDAR
@@ -318,6 +320,102 @@ def api_dashboard():
         })
     except Exception as e:
         return jsonify({"error": f"Dashboard aggregation failed: {e}"}), 500
+
+
+@app.route("/api/export/csv")
+def api_export_csv():
+    """Exports the demo-field dashboard analysis as a downloadable CSV file.
+
+    Reuses the same AI pipeline as /api/fields and adds the per-field weather
+    context. Empty datasets are handled gracefully (headers-only CSV). The file
+    is UTF-8 encoded (with BOM so Excel opens it correctly) and streamed as an
+    attachment download."""
+
+    def process(f):
+        try:
+            out = run_pipeline(f["lat"], f["lon"], crop_hint=f["crop_hint"])
+            out["field"].update({
+                "id": f["id"],
+                "name": f["name"],
+                "district": f["district"],
+                "state": f["state"],
+            })
+            try:
+                out["weather"] = get_weather(f["lat"], f["lon"])
+            except Exception:
+                out["weather"] = {}
+            return out
+        except Exception:
+            return None
+
+    with ThreadPoolExecutor(max_workers=min(6, len(DEMO_FIELDS))) as executor:
+        results = [r for r in executor.map(process, DEMO_FIELDS) if r is not None]
+
+    exported_at = datetime.now().isoformat(timespec="seconds")
+
+    buf = io.StringIO()
+    buf.write("﻿")  # UTF-8 BOM -> Excel opens special characters correctly
+    writer = csv.writer(buf)
+
+    writer.writerow([
+        "Field ID", "Farmer", "District", "State", "Latitude", "Longitude",
+        "Analysis Date", "Crop", "Crop Confidence", "Stress Level",
+        "Stress Confidence", "NDVI", "NDWI", "MSI", "VV_dB", "VH_dB",
+        "VV_VH_ratio", "Growth Stage", "Growth Fraction", "Urgency",
+        "Recommended Water (mm)", "Crop Water Demand (mm/day)", "Advisory",
+        "Reasoning", "Rain (mm)", "Humidity (%)", "Temp (C)", "Wind (kph)",
+        "Exported At",
+    ])
+
+    for r in results:
+        field = r.get("field", {})
+        sat = r.get("satellite_features", {})
+        optical = sat.get("optical", {})
+        sar = sat.get("sar", {})
+        ai = r.get("ai_prediction", {})
+        adv = r.get("advisory", {})
+        wx = r.get("weather", {})
+        reasoning = adv.get("reasoning", "")
+        if isinstance(reasoning, (list, tuple)):
+            reasoning = "; ".join(str(x) for x in reasoning)
+        writer.writerow([
+            field.get("id", ""),
+            field.get("name", ""),
+            field.get("district", ""),
+            field.get("state", ""),
+            field.get("lat", ""),
+            field.get("lon", ""),
+            field.get("date", ""),
+            ai.get("predicted_crop", ""),
+            ai.get("crop_confidence", ""),
+            ai.get("predicted_stress", ""),
+            ai.get("stress_confidence", ""),
+            optical.get("NDVI", ""),
+            optical.get("NDWI", ""),
+            optical.get("MSI", ""),
+            sar.get("VV_dB", ""),
+            sar.get("VH_dB", ""),
+            sar.get("VV_VH_ratio", ""),
+            sat.get("growth_stage", ""),
+            sat.get("growth_fraction", ""),
+            adv.get("urgency", ""),
+            adv.get("recommended_water_mm", ""),
+            adv.get("crop_water_demand_mm_day", ""),
+            adv.get("action_hi", ""),
+            reasoning,
+            wx.get("rain_mm", ""),
+            wx.get("humidity_pct", ""),
+            wx.get("temp_c", ""),
+            wx.get("wind_kph", ""),
+            exported_at,
+        ])
+
+    filename = f"krishimitra_fields_{date.today().isoformat()}.csv"
+    return Response(
+        buf.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 if __name__ == "__main__":

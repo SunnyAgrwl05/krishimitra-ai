@@ -600,6 +600,29 @@ document.getElementById("tab-analyze").addEventListener("click", () => showView(
 document.getElementById("tab-pipeline").addEventListener("click", () => showView("pipeline"));
 document.getElementById("tab-contributors").addEventListener("click", () => showView("contributors"));
 
+// ---- Export dashboard data as CSV (served by GET /api/export/csv as an attachment) ----
+const exportCsvBtn = document.getElementById("exportCsvBtn");
+if (exportCsvBtn) {
+  exportCsvBtn.addEventListener("click", () => {
+    if (exportCsvBtn.classList.contains("is-loading")) return;
+    exportCsvBtn.classList.add("is-loading");
+
+    // A hidden anchor pointing at the endpoint triggers a normal file download
+    // (the server sends Content-Disposition: attachment) without leaving the page.
+    const a = document.createElement("a");
+    a.href = "/api/export/csv";
+    a.download = "";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    // The download runs in the background; re-enable shortly after so the user
+    // can export again. There's no reliable cross-browser "download finished"
+    // event for attachment links, so a short timeout is the standard approach.
+    setTimeout(() => exportCsvBtn.classList.remove("is-loading"), 1500);
+  });
+}
+
 // ---- Contributors: fetched live from the GitHub REST API, cached after first load ----
 const CONTRIB_REPO = "SunnyAgrwl05/krishimitra-ai";
 let contribLoaded = false;

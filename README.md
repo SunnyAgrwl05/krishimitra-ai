@@ -33,6 +33,7 @@ The platform helps farmers monitor crop health, detect moisture stress, and rece
 - 📍 Interactive GIS Dashboard
 - 🌦️ Weather Integration
 - 📄 PDF Report Generation
+- 📤 CSV Data Export
 - 🔍 Location Search
 - 📊 NDVI, NDWI & MSI Visualization
 - 📱 Responsive UI
@@ -145,6 +146,7 @@ http://localhost:5001
 | `/api/history` | GET | Analysis history |
 | `/api/dashboard` | GET | Dashboard statistics |
 | `/api/model-metrics` | GET | AI model performance |
+| `/api/export/csv` | GET | Download dashboard field data as CSV |
 | `/api/health` | GET | Health check |
 
 ---
