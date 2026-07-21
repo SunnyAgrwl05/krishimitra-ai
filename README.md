@@ -32,6 +32,7 @@ The platform helps farmers monitor crop health, detect moisture stress, and rece
 - 💧 Smart Irrigation Recommendation
 - 📍 Interactive GIS Dashboard
 - 🌦️ Weather Integration
+- 📅 7-Day Weather Forecast
 - 📄 PDF Report Generation
 - 📤 CSV Data Export
 - 🔍 Location Search
@@ -143,6 +144,7 @@ http://localhost:5001
 | `/api/fields` | GET | Fetch all monitored fields |
 | `/api/analyze` | POST | Analyze a custom location |
 | `/api/weather` | GET | Weather information |
+| `/api/forecast` | GET | 7-day weather forecast (Open-Meteo) |
 | `/api/history` | GET | Analysis history |
 | `/api/dashboard` | GET | Dashboard statistics |
 | `/api/model-metrics` | GET | AI model performance |

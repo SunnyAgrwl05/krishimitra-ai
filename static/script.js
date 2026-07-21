@@ -568,6 +568,9 @@ function showView(view) {
   document.getElementById("view-contributors").style.display =
     view === "contributors" ? "block" : "none";
 
+  document.getElementById("view-weather").style.display =
+    view === "weather" ? "block" : "none";
+
   document.querySelectorAll(".nav-pill").forEach(btn => {
     btn.classList.remove("active");
     btn.setAttribute("aria-selected", "false");
@@ -588,6 +591,10 @@ function showView(view) {
     loadContributors();
   }
 
+  if (view === "weather") {
+    loadForecastOnce();
+  }
+
   if (map) {
     setTimeout(() => {
       map.invalidateSize();
@@ -599,6 +606,126 @@ document.getElementById("tab-map").addEventListener("click", () => showView("map
 document.getElementById("tab-analyze").addEventListener("click", () => showView("analyze"));
 document.getElementById("tab-pipeline").addEventListener("click", () => showView("pipeline"));
 document.getElementById("tab-contributors").addEventListener("click", () => showView("contributors"));
+document.getElementById("tab-weather").addEventListener("click", () => showView("weather"));
+
+// ---- 7-Day Weather Forecast (GET /api/forecast, powered by Open-Meteo) ----
+let forecastInitDone = false;
+
+function loadForecastOnce() {
+  // Auto-load the default location the first time the tab is opened; afterwards
+  // the user drives it via the form.
+  if (forecastInitDone) return;
+  forecastInitDone = true;
+  const lat = parseFloat(document.getElementById("fcLat").value);
+  const lon = parseFloat(document.getElementById("fcLon").value);
+  loadForecast(lat, lon);
+}
+
+async function loadForecast(lat, lon) {
+  const box = document.getElementById("forecastResult");
+  if (!box) return;
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    box.innerHTML = `<div class="forecast-error">Sahi latitude aur longitude daalein.</div>`;
+    return;
+  }
+
+  box.innerHTML = `<div class="forecast-skeleton"></div>`;
+
+  try {
+    const res = await fetch(`/api/forecast?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`);
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || `Server error ${res.status}`);
+    renderForecast(data);
+  } catch (err) {
+    box.innerHTML = `
+      <div class="forecast-error">
+        Forecast load nahi ho paya (${escapeHtml(err.message)}). Thodi der baad dobara koshish karein.
+      </div>`;
+  }
+}
+
+function renderForecast(data) {
+  const box = document.getElementById("forecastResult");
+  const c = data.current || {};
+  const days = data.daily || [];
+
+  const currentHtml = `
+    <div class="fc-current glass">
+      <div class="fc-current-main">
+        <span class="fc-current-icon">${escapeHtml(c.icon || "🌡️")}</span>
+        <div>
+          <div class="fc-current-temp">${fmtNum(c.temp_c)}°C</div>
+          <div class="fc-current-cond">${escapeHtml(c.condition || "—")}</div>
+        </div>
+      </div>
+      <div class="fc-current-meta">
+        <span>💧 Humidity: <b>${fmtNum(c.humidity_pct)}%</b></span>
+        <span>🌧️ Rain: <b>${fmtNum(c.precip_mm)} mm</b></span>
+        <span>💨 Wind: <b>${fmtNum(c.wind_kph)} km/h</b></span>
+      </div>
+    </div>`;
+
+  const recHtml = data.recommendation
+    ? `<div class="fc-recommendation">${escapeHtml(data.recommendation)}</div>`
+    : "";
+
+  const daysHtml = days.map((d, i) => `
+    <div class="fc-day">
+      <div class="fc-day-name">${i === 0 ? "Aaj" : escapeHtml(dayLabel(d.date))}</div>
+      <div class="fc-day-icon" title="${escapeHtml(d.condition || "")}">${escapeHtml(d.icon || "🌡️")}</div>
+      <div class="fc-day-temp"><b>${fmtNum(d.temp_max_c)}°</b> / ${fmtNum(d.temp_min_c)}°</div>
+      <div class="fc-day-rain">🌧️ ${fmtNum(d.precip_prob_pct)}%</div>
+      <div class="fc-day-humidity">💧 ${fmtNum(d.humidity_pct)}%</div>
+      <div class="fc-day-wind">💨 ${fmtNum(d.wind_kph)}</div>
+    </div>`).join("");
+
+  const sourceHtml = `<p class="fc-source muted">Source: ${escapeHtml(data.source || "")}</p>`;
+
+  box.innerHTML = currentHtml + recHtml + `<div class="fc-grid">${daysHtml}</div>` + sourceHtml;
+}
+
+function fmtNum(v) {
+  return (v === null || v === undefined || v === "") ? "—" : Math.round(Number(v) * 10) / 10;
+}
+
+function dayLabel(iso) {
+  const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const d = new Date(iso + "T00:00:00");
+  return Number.isNaN(d.getTime()) ? iso : names[d.getDay()];
+}
+
+const forecastForm = document.getElementById("forecastForm");
+if (forecastForm) {
+  forecastForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    loadForecast(parseFloat(document.getElementById("fcLat").value),
+                 parseFloat(document.getElementById("fcLon").value));
+  });
+}
+
+const fcLocateBtn = document.getElementById("fcLocateBtn");
+if (fcLocateBtn) {
+  fcLocateBtn.addEventListener("click", () => {
+    if (!navigator.geolocation) {
+      alert("❌ Geolocation is browser mein support nahi hai.");
+      return;
+    }
+    fcLocateBtn.disabled = true;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        document.getElementById("fcLat").value = pos.coords.latitude.toFixed(4);
+        document.getElementById("fcLon").value = pos.coords.longitude.toFixed(4);
+        loadForecast(pos.coords.latitude, pos.coords.longitude);
+        fcLocateBtn.disabled = false;
+      },
+      () => {
+        alert("Location nahi mil payi. Manually lat/lon daalein.");
+        fcLocateBtn.disabled = false;
+      }
+    );
+  });
+}
 
 // ---- Export dashboard data as CSV (served by GET /api/export/csv as an attachment) ----
 const exportCsvBtn = document.getElementById("exportCsvBtn");
