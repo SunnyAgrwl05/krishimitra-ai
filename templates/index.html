@@ -13,7 +13,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='5') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='6') }}">
 </head>
 
 <body>
@@ -61,6 +61,13 @@
           <path fill="currentColor" d="M4 6h16v2H4zm0 5h10v2H4zm0 5h16v2H4z" />
         </svg>
         Pipeline
+      </button>
+      <button class="nav-pill" id="tab-contributors" role="tab" aria-selected="false">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path fill="currentColor"
+            d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+        </svg>
+        Contributors
       </button>
     </nav>
 
@@ -292,6 +299,33 @@
       </div>
     </section>
 
+    <!-- CONTRIBUTORS VIEW -->
+    <section class="analyze-view" id="view-contributors" style="display:none">
+      <div class="analyze-card contributors-card glass">
+        <h2>🌱 Our Contributors</h2>
+        <p class="muted">KrishiMitra AI is built by an open-source community. Thank you to everyone who
+          has contributed their time and skills to help farmers with smarter crop &amp; irrigation advisory. ❤️</p>
+
+        <div class="contrib-stats" id="contribStats" aria-hidden="true"></div>
+
+        <div class="contrib-grid" id="contribGrid" aria-live="polite">
+          <div class="contrib-skeleton"></div>
+          <div class="contrib-skeleton"></div>
+          <div class="contrib-skeleton"></div>
+          <div class="contrib-skeleton"></div>
+          <div class="contrib-skeleton"></div>
+          <div class="contrib-skeleton"></div>
+        </div>
+
+        <p class="contrib-cta muted">
+          Want to see your face here? Explore the
+          <a href="https://github.com/SunnyAgrwl05/krishimitra-ai/issues" target="_blank"
+            rel="noopener">open issues</a>
+          and open your first pull request!
+        </p>
+      </div>
+    </section>
+
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -301,7 +335,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="{{ url_for('static', filename='script.js', v='7') }}"></script>
+  <script src="{{ url_for('static', filename='script.js', v='8') }}"></script>
 </body>
 
 </html>

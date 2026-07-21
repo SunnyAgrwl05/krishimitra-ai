@@ -565,6 +565,9 @@ function showView(view) {
   document.getElementById("view-pipeline").style.display =
     view === "pipeline" ? "block" : "none";
 
+  document.getElementById("view-contributors").style.display =
+    view === "contributors" ? "block" : "none";
+
   document.querySelectorAll(".nav-pill").forEach(btn => {
     btn.classList.remove("active");
     btn.setAttribute("aria-selected", "false");
@@ -581,6 +584,10 @@ function showView(view) {
     loadMetrics();
   }
 
+  if (view === "contributors") {
+    loadContributors();
+  }
+
   if (map) {
     setTimeout(() => {
       map.invalidateSize();
@@ -591,6 +598,70 @@ function showView(view) {
 document.getElementById("tab-map").addEventListener("click", () => showView("map"));
 document.getElementById("tab-analyze").addEventListener("click", () => showView("analyze"));
 document.getElementById("tab-pipeline").addEventListener("click", () => showView("pipeline"));
+document.getElementById("tab-contributors").addEventListener("click", () => showView("contributors"));
+
+// ---- Contributors: fetched live from the GitHub REST API, cached after first load ----
+const CONTRIB_REPO = "SunnyAgrwl05/krishimitra-ai";
+let contribLoaded = false;
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+
+async function loadContributors() {
+  const grid = document.getElementById("contribGrid");
+  const statsEl = document.getElementById("contribStats");
+  if (!grid || contribLoaded) return;
+
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${CONTRIB_REPO}/contributors?per_page=100`,
+      { headers: { Accept: "application/vnd.github+json" } }
+    );
+    if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+
+    const data = await res.json();
+    const people = Array.isArray(data) ? data.filter(c => c.type === "User") : [];
+
+    if (!people.length) {
+      if (statsEl) statsEl.innerHTML = "";
+      grid.innerHTML = `<div class="contrib-empty">Koi contributor abhi list nahi hua — be the first! 🌟</div>`;
+      contribLoaded = true;
+      return;
+    }
+
+    const totalContributions = people.reduce((sum, c) => sum + (c.contributions || 0), 0);
+    if (statsEl) {
+      statsEl.innerHTML = `
+        <div class="contrib-stat"><span class="cs-value">${people.length}</span><span class="cs-label">Contributors</span></div>
+        <div class="contrib-stat"><span class="cs-value">${totalContributions}</span><span class="cs-label">Contributions</span></div>`;
+    }
+
+    grid.innerHTML = people.map((c, i) => {
+      const login = escapeHtml(c.login);
+      const badge = i === 0 ? `<span class="contrib-badge" title="Top contributor">⭐</span>` : "";
+      const count = c.contributions || 0;
+      return `
+        <a class="contrib-card" href="${escapeHtml(c.html_url)}" target="_blank" rel="noopener" title="@${login} — ${count} contribution${count === 1 ? "" : "s"}">
+          ${badge}
+          <img class="contrib-avatar" src="${escapeHtml(c.avatar_url)}&s=144" alt="@${login} avatar" loading="lazy" width="72" height="72">
+          <span class="contrib-name">@${login}</span>
+          <span class="contrib-count">${count} commit${count === 1 ? "" : "s"}</span>
+        </a>`;
+    }).join("");
+
+    contribLoaded = true;
+  } catch (err) {
+    if (statsEl) statsEl.innerHTML = "";
+    grid.innerHTML = `
+      <div class="contrib-error">
+        Contributors abhi load nahi ho paye (${escapeHtml(err.message)}).
+        <a href="https://github.com/${CONTRIB_REPO}/graphs/contributors" target="_blank" rel="noopener">GitHub par dekhein →</a>
+      </div>`;
+  }
+}
 
 const sidebarToggle = document.getElementById("sidebarToggle");
 const sidebar = document.getElementById("view-map-sidebar");

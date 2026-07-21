@@ -234,6 +234,21 @@ git push origin feature/amazing-feature
 
 ---
 
+# 🌱 Contributors
+
+KrishiMitra AI is built and improved by our open-source community. A live
+**Contributors** tab is available in the dashboard top navigation — it fetches
+the latest contributors straight from the GitHub API and shows their avatars,
+usernames, contribution counts, and profile links.
+
+<a href="https://github.com/SunnyAgrwl05/krishimitra-ai/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=SunnyAgrwl05/krishimitra-ai" alt="Contributors" />
+</a>
+
+Thank you to everyone who has contributed! ❤️
+
+---
+
 # 🖼️ Additional Screenshots
 
 ## 📍 Field Monitoring Dashboard
