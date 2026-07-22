@@ -2002,16 +2002,14 @@ html[data-theme="light"] .theme-toggle .icon-sun {
   display: none;
 }
 
-/* ---- Smooth cross-fade between themes on the main surfaces ---- */
+/* ---- Smooth cross-fade between themes on the main surfaces ----
+   Only ambient surfaces are listed here. Interactive components
+   (.nav-pill, .icon-btn, .field-card, .status-card) already animate their
+   own colors via their existing `transition`, and .sidebar/.detail keep
+   their slide transitions — so they are deliberately left untouched to
+   avoid overriding those animations. */
 body,
-.glass,
 .topbar,
-.sidebar,
-.detail,
-.nav-pill,
-.icon-btn,
-.status-card,
-.field-card,
 .space-bg,
 .stars,
 .glow {
@@ -2021,14 +2019,7 @@ body,
 @media (prefers-reduced-motion: reduce) {
 
   body,
-  .glass,
   .topbar,
-  .sidebar,
-  .detail,
-  .nav-pill,
-  .icon-btn,
-  .status-card,
-  .field-card,
   .space-bg,
   .stars,
   .glow {
