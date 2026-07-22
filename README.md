@@ -38,6 +38,7 @@ The platform helps farmers monitor crop health, detect moisture stress, and rece
 - 🔍 Location Search
 - 📊 NDVI, NDWI & MSI Visualization
 - 📱 Responsive UI
+- 🌗 Dark / Light Theme Toggle — remembers your choice and follows your system preference
 
 ---
 

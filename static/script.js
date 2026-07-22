@@ -7,6 +7,9 @@ const stressColor = {
 
 let map, markers = {}, fieldsData = [], markerClusterGroup = null, heatLayer = null;
 let baseLayers = {}, currentBase = 'dark', overlayActive = { ndvi: false, stress: false, heat: false };
+// When true, the base map tiles auto-follow the UI theme (dark ⇄ street).
+// Set false the moment the user picks a base layer manually.
+let autoBaseByTheme = true;
 let currentField = null;
 let wizardStep = 1;
 
@@ -106,6 +109,8 @@ function setupMapResizeHandling() {
 function setupLayerControls() {
   document.querySelectorAll('.layer-btn[data-layer]').forEach(btn => {
     btn.addEventListener('click', () => {
+      // Manual base-layer choice wins — stop auto-following the theme.
+      autoBaseByTheme = false;
       const layer = btn.dataset.layer;
       if (!map || !baseLayers[layer] || layer === currentBase) return;
       map.removeLayer(baseLayers[currentBase]);
@@ -1396,11 +1401,82 @@ async function exportPDF() {
   }
 }
 
+/* ================= THEME (Dark / Light) ================= */
+/* The initial theme is applied inline in <head> (before paint) to avoid a
+   flash. Here we wire the toggle button, persistence, and keep the map's
+   base tiles in step with the active theme. */
+function currentTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+}
+
+function updateThemeToggleUI(theme) {
+  const btn = document.getElementById('themeToggle');
+  if (!btn) return;
+  const isLight = theme === 'light';
+  const label = isLight ? 'Switch to dark theme' : 'Switch to light theme';
+  btn.setAttribute('aria-pressed', isLight ? 'true' : 'false');
+  btn.setAttribute('aria-label', label);
+  btn.setAttribute('title', label);
+}
+
+/* Keep the base map readable under each theme: dark tiles for dark UI,
+   light street tiles for light UI — unless the user picked a base manually. */
+function syncMapBaseToTheme(theme) {
+  if (!map || !autoBaseByTheme) return;
+  const target = theme === 'light' ? 'street' : 'dark';
+  if (target === currentBase || !baseLayers[target] || !baseLayers[currentBase]) return;
+  map.removeLayer(baseLayers[currentBase]);
+  baseLayers[target].addTo(map);
+  currentBase = target;
+  document.querySelectorAll('.layer-btn[data-layer]').forEach(b => {
+    const on = b.dataset.layer === target;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  safeInvalidate();
+}
+
+function applyTheme(theme, persist) {
+  document.documentElement.setAttribute('data-theme', theme);
+  if (persist) {
+    try { localStorage.setItem('km-theme', theme); } catch (e) { /* storage blocked */ }
+  }
+  updateThemeToggleUI(theme);
+  syncMapBaseToTheme(theme);
+}
+
+function setupThemeToggle() {
+  const btn = document.getElementById('themeToggle');
+  const theme = currentTheme();
+  updateThemeToggleUI(theme);
+  syncMapBaseToTheme(theme);
+
+  if (btn) {
+    btn.addEventListener('click', () => {
+      applyTheme(currentTheme() === 'light' ? 'dark' : 'light', true);
+    });
+  }
+
+  // Follow the OS theme only while the user hasn't chosen one explicitly.
+  if (window.matchMedia) {
+    const mq = window.matchMedia('(prefers-color-scheme: light)');
+    const onOsChange = (e) => {
+      let saved = null;
+      try { saved = localStorage.getItem('km-theme'); } catch (_) { /* ignore */ }
+      if (!saved) applyTheme(e.matches ? 'light' : 'dark', false);
+    };
+    if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onOsChange);
+    else if (typeof mq.addListener === 'function') mq.addListener(onOsChange);
+  }
+}
+
 /* ================= INIT ================= */
 document.addEventListener("DOMContentLoaded", () => {
   showView("map");
 
   initMap();
+
+  setupThemeToggle();
 
   loadFields();
 

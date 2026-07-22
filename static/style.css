@@ -1955,3 +1955,83 @@ select:focus {
     gap: 8px;
   }
 }
+
+/* =====================================================================
+   THEME TOGGLE  (Dark / Light)
+   The whole UI is driven by the CSS custom properties declared in :root
+   (the dark theme). The light theme simply re-declares those tokens on
+   html[data-theme="light"]; every component picks the new values up for
+   free. Only a few hard-coded ambient surfaces need explicit overrides.
+   ===================================================================== */
+
+/* ---- Light theme tokens ---- */
+html[data-theme="light"] {
+  --bg: #eaf1ec;
+  --panel: rgba(255, 255, 255, 0.72);
+  --panel-2: rgba(255, 255, 255, 0.88);
+  --panel-solid: #ffffff;
+  --line: rgba(20, 83, 55, 0.18);
+  --line-strong: rgba(20, 83, 55, 0.42);
+  --text: #0f2419;
+  --muted: #4b6a5c;
+  /* Deepen the accent green so it keeps AA contrast as text/icon on the
+     now-light surfaces (healthy dots, active nav pill, focus rings, etc). */
+  --green: #0b7a43;
+}
+
+/* Ambient background is hard-coded (not tokenised) — swap it for light. */
+html[data-theme="light"] .space-bg {
+  background: radial-gradient(ellipse at top, #f4f9f5, #e3ede7 70%);
+}
+
+/* White starfield is invisible on a light sky — hide it, soften the glows. */
+html[data-theme="light"] .stars {
+  opacity: 0;
+}
+
+html[data-theme="light"] .glow {
+  opacity: 0.1;
+}
+
+/* ---- Toggle button: show the icon of the theme you'll switch TO ---- */
+html[data-theme="dark"] .theme-toggle .icon-moon {
+  display: none;
+}
+
+html[data-theme="light"] .theme-toggle .icon-sun {
+  display: none;
+}
+
+/* ---- Smooth cross-fade between themes on the main surfaces ---- */
+body,
+.glass,
+.topbar,
+.sidebar,
+.detail,
+.nav-pill,
+.icon-btn,
+.status-card,
+.field-card,
+.space-bg,
+.stars,
+.glow {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, opacity 0.25s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  body,
+  .glass,
+  .topbar,
+  .sidebar,
+  .detail,
+  .nav-pill,
+  .icon-btn,
+  .status-card,
+  .field-card,
+  .space-bg,
+  .stars,
+  .glow {
+    transition: none;
+  }
+}
