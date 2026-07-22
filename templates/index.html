@@ -13,7 +13,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='7') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='9') }}">
 </head>
 
 <body>
@@ -61,6 +61,13 @@
           <path fill="currentColor" d="M4 6h16v2H4zm0 5h10v2H4zm0 5h16v2H4z" />
         </svg>
         Pipeline
+      </button>
+      <button class="nav-pill" id="tab-weather" role="tab" aria-selected="false">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path fill="currentColor"
+            d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79 1.42-1.41zM4 10.5H1v2h3v-2zm9-9.95h-2V3.5h2V.55zm7.45 3.91l-1.41-1.41-1.79 1.79 1.41 1.41 1.79-1.79zm-3.21 13.7l1.79 1.8 1.41-1.41-1.8-1.79-1.4 1.4zM20 10.5v2h3v-2h-3zm-8-5c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm-1 16.95h2V19.5h-2v2.95zm-7.45-3.91l1.41 1.41 1.79-1.8-1.41-1.41-1.79 1.8z" />
+        </svg>
+        Weather
       </button>
       <button class="nav-pill" id="tab-contributors" role="tab" aria-selected="false">
         <svg viewBox="0 0 24 24" width="16" height="16">
@@ -307,6 +314,26 @@
       </div>
     </section>
 
+    <!-- WEATHER FORECAST VIEW -->
+    <section class="analyze-view" id="view-weather" style="display:none">
+      <div class="analyze-card weather-card glass">
+        <h2>🌦️ 7-Day Weather Forecast</h2>
+        <p class="muted">Aane wale hafte ka mausam — behtar sinchai aur fasal planning ke liye. Powered by
+          Open-Meteo (live), simulated fallback ke saath.</p>
+
+        <form id="forecastForm" class="forecast-form">
+          <label>Latitude <input type="number" step="0.0001" name="lat" id="fcLat" value="26.85" required></label>
+          <label>Longitude <input type="number" step="0.0001" name="lon" id="fcLon" value="80.95" required></label>
+          <button type="button" class="btn-ghost" id="fcLocateBtn">📍 Meri Location</button>
+          <button type="submit" class="btn-primary">Get Forecast</button>
+        </form>
+
+        <div id="forecastResult" aria-live="polite">
+          <div class="forecast-skeleton"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- CONTRIBUTORS VIEW -->
     <section class="analyze-view" id="view-contributors" style="display:none">
       <div class="analyze-card contributors-card glass">
@@ -343,7 +370,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="{{ url_for('static', filename='script.js', v='9') }}"></script>
+  <script src="{{ url_for('static', filename='script.js', v='11') }}"></script>
 </body>
 
 </html>

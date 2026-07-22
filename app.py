@@ -20,7 +20,7 @@ from flask import Flask, jsonify, request, render_template, Response
 sys.path.append(os.path.join(os.path.dirname(__file__), "model"))
 from satellite_sim import simulate_field, CROP_CALENDAR
 from decision_engine import compute_advisory
-from weather import get_weather
+from weather import get_weather, get_forecast
 from location_search import search_location
 import history as history_db
 
@@ -250,6 +250,19 @@ def api_weather():
     except (TypeError, ValueError):
         return jsonify({"error": "lat aur lon query params (numbers) required hain"}), 400
     return jsonify(get_weather(lat, lon))
+
+
+@app.route("/api/forecast")
+def api_forecast():
+    """7-day weather forecast (current + daily) for a lat/lon via the free
+    Open-Meteo API. Falls back to a deterministic simulated forecast if the API
+    can't be reached, so it never errors out."""
+    try:
+        lat = float(request.args.get("lat"))
+        lon = float(request.args.get("lon"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "lat aur lon query params (numbers) required hain"}), 400
+    return jsonify(get_forecast(lat, lon))
 
 
 @app.route("/api/search-location")
