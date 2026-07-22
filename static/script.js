@@ -1437,12 +1437,18 @@ function syncMapBaseToTheme(theme) {
 }
 
 function applyTheme(theme, persist) {
-  document.documentElement.setAttribute('data-theme', theme);
+  const root = document.documentElement;
+  // Enable a brief, color-only cross-fade for this switch only, then remove
+  // it — so no element keeps an overridden transition (preserves hover lifts,
+  // the mobile sidebar slide, card animations, etc.).
+  root.classList.add('theme-transition');
+  root.setAttribute('data-theme', theme);
   if (persist) {
     try { localStorage.setItem('km-theme', theme); } catch (e) { /* storage blocked */ }
   }
   updateThemeToggleUI(theme);
   syncMapBaseToTheme(theme);
+  window.setTimeout(() => root.classList.remove('theme-transition'), 300);
 }
 
 function setupThemeToggle() {

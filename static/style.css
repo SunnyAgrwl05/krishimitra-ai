@@ -2002,27 +2002,28 @@ html[data-theme="light"] .theme-toggle .icon-sun {
   display: none;
 }
 
-/* ---- Smooth cross-fade between themes on the main surfaces ----
-   Only ambient surfaces are listed here. Interactive components
-   (.nav-pill, .icon-btn, .field-card, .status-card) already animate their
-   own colors via their existing `transition`, and .sidebar/.detail keep
-   their slide transitions — so they are deliberately left untouched to
-   avoid overriding those animations. */
-body,
-.topbar,
-.space-bg,
-.stars,
-.glow {
-  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, opacity 0.25s ease;
+/* ---- Smooth cross-fade between themes ----
+   The transition is applied ONLY while a theme switch is in progress: JS
+   adds the .theme-transition class to <html> for ~300ms, then removes it.
+   This lets every surface cross-fade together, while never permanently
+   overriding any element's own transition — so hover lifts, the mobile
+   sidebar slide, card animations, etc. are left exactly as they were.
+   (Only color-family properties are transitioned, so transforms/layout
+   are unaffected even during the switch.) */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition: background-color 0.25s ease, border-color 0.25s ease,
+    color 0.25s ease, fill 0.25s ease, opacity 0.25s ease !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
 
-  body,
-  .topbar,
-  .space-bg,
-  .stars,
-  .glow {
-    transition: none;
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition: none !important;
   }
 }
